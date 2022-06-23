@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			timerSeconds = timer.querySelector('#seconds'),
 			timerId = setInterval(updateTimer, 1000);
 
-			updateTimer();
+		updateTimer();
 
 		function updateTimer() {
 			const { time, days, hours, minutes, seconds } = getTimeRemaining();
@@ -89,5 +89,87 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 	}
+
+	// Модалка
+
+
+	const modal = document.querySelector('.modal'),
+		modalBtns = document.querySelectorAll('[data-modal]');
+
+	modalBtns.forEach(item => {
+		item.addEventListener('click', () => {
+			openModal();
+		});
+	});
+
+	function openModal() {
+		document.body.style.overflow = 'hidden';
+		modal.classList.add('show');
+		modal.classList.remove('hide');
+		clearTimeout(modalTimerId);
+	}
+
+	function closeModal() {
+		document.body.style.overflow = '';
+		modal.classList.add('hide');
+		modal.classList.remove('show');
+	}
+
+	modal.addEventListener('click', (e) => {
+		const target = e.target;
+		if (target && target.matches('.modal__close') || target && target.matches('.modal')) closeModal();
+	});
+
+	document.addEventListener('keydown', (e) => {
+		const code = e.code;
+		if (modal.classList.contains('show') && code === 'Escape') closeModal();
+	});
+
+	function openByBottom() {
+		if (window.scrollY + document.documentElement.clientHeight >= document.documentElement.scrollHeight - 1) {
+			openModal();
+			window.removeEventListener('scroll', openByBottom);
+		}
+	}
+
+	window.addEventListener('scroll', openByBottom);
+
+	const modalTimerId = setTimeout(openModal, 50000);
+
+
+	// Карточки
+
+	class Card {
+		constructor(parent, imgSrc, alt, subtitle, price, currency, descr, ...classes) {
+			this.parent = parent;
+			this.classes = classes.length === 0 ? ['menu__item'] : classes;
+			this.imgSrc = imgSrc;
+			this.alt = alt;
+			this.subtitle = subtitle;
+			this.price = price;
+			this.currency = currency;
+			this.descr = descr;
+		}
+
+		render() {
+			const card = document.createElement('div');
+			this.classes.forEach(item => card.classList.add(item));
+
+			card.innerHTML = `
+					<img src=${this.imgSrc} alt=${this.alt}>
+					<h3 class="menu__item-subtitle">${this.subtitle}</h3>
+					<div class="menu__item-descr">${this.descr}</div>
+					<div class="menu__item-divider"></div>
+					<div class="menu__item-price">
+							<div class="menu__item-cost">Цена:</div>
+							<div class="menu__item-total"><span>${this.price}</span> ${this.currency}</div>
+					</div>
+			`;
+
+			document.querySelector(this.parent).insertAdjacentElement('beforeend', card);
+		}
+	}
+
+	new Card('.menu__field .container', "img/tabs/vegy.jpg", "vegy", 'Меню "Фитнес"', '229', 'грн/день', '>Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!', 'menu__item').render();
 
 });
