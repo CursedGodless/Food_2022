@@ -172,4 +172,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	new Card('.menu__field .container', "img/tabs/vegy.jpg", "vegy", 'Меню "Фитнес"', '229', 'грн/день', '>Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!', 'menu__item').render();
 
+	const forms = document.querySelectorAll('form');
+
+	const message = {
+		loading: 'Данные в процессе отправки',
+		success: 'Отправка прошла успешно. С вами скоро свяжутся',
+		failure: 'Ошибка отправки. Попробуйте позже'
+	};
+
+	forms.forEach(form => postData(form));
+
+	function postData(form) {
+		const statusMessage = document.createElement('img');
+		statusMessage.src = 'icons/spinner.svg';
+		statusMessage.style.cssText = `
+		display:block;
+		margin: 0 auto;
+		margin-top: 15px;
+		`;
+		
+		form.addEventListener('submit', (e) => {
+			e.preventDefault();
+			
+			form.insertAdjacentElement('afterend', statusMessage);
+
+			const xhr = new XMLHttpRequest();
+			xhr.open('POST', 'server.php');
+
+			const formData = new FormData(form);
+			xhr.send(formData);
+
+			xhr.addEventListener('load', () => {
+				statusMessage.remove();
+				if (xhr.status === 200) {
+					showModalAfterRequest(message.success);
+				} else {
+					showModalAfterRequest(message.failure);
+				}
+				setTimeout(() => {
+					form.reset();
+					closeModal();
+				}, 1500);
+			});
+
+		});
+
+	}
+
+	function showModalAfterRequest(modalText) {
+		const previousModal = document.querySelector('.modal__content');
+
+		previousModal.classList.add('hide');
+		openModal();
+
+		const requestModal = document.createElement('div');
+		requestModal.classList.add('modal__content', 'show');
+		requestModal.innerHTML = `
+			<div class="modal__close">&times;</div>
+			<div class="modal__title">${modalText}</div>
+		`;
+		document.querySelector('.modal .modal__dialog').append(requestModal);
+
+		setTimeout(() => {
+			closeModal();
+			requestModal.remove();
+			previousModal.classList.remove('hide');
+		}, 1500);
+	}
 });
