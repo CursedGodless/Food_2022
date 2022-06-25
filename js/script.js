@@ -139,6 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Карточки
 
+	const getData = async (url) => {
+		const request = await fetch(url);
+		if (request.ok) {
+			return request;
+		} else {
+			throw new Error(`Could not fetch, url: ${request.url}, status: ${request.status}`);
+		}
+	};
+
+	const postData = async (url, header, data) => {
+		return await fetch(url, {
+			method: 'POST',
+			headers: header,
+			body: data
+		});
+	};
+
 	class Card {
 		constructor(parent, imgSrc, alt, subtitle, price, currency, descr, ...classes) {
 			this.parent = parent;
@@ -170,7 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	}
 
-	new Card('.menu__field .container', "img/tabs/vegy.jpg", "vegy", 'Меню "Фитнес"', '229', 'грн/день', '>Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!', 'menu__item').render();
+	getData('http://localhost:3000/menu')
+		.then(response => response.json())
+		.then(data => {
+			data.forEach(({ img, altimg, title, descr, price }) => {
+				new Card('.menu__field .container', img, altimg, title, price, 'грн/день', descr, 'menu__item').render();
+			})
+		});
 
 	const forms = document.querySelectorAll('form');
 
@@ -180,9 +203,11 @@ document.addEventListener('DOMContentLoaded', () => {
 		failure: 'Ошибка отправки. Попробуйте позже'
 	};
 
-	forms.forEach(form => postData(form));
+	forms.forEach(form => bindPostData(form));
 
-	function postData(form) {
+
+
+	function bindPostData(form) {
 		const statusMessage = document.createElement('img');
 		statusMessage.src = 'icons/spinner.svg';
 		statusMessage.style.cssText = `
@@ -190,31 +215,34 @@ document.addEventListener('DOMContentLoaded', () => {
 		margin: 0 auto;
 		margin-top: 15px;
 		`;
-		
+
 		form.addEventListener('submit', (e) => {
 			e.preventDefault();
-			
+
 			form.insertAdjacentElement('afterend', statusMessage);
 
-			const xhr = new XMLHttpRequest();
-			xhr.open('POST', 'server.php');
-
 			const formData = new FormData(form);
-			xhr.send(formData);
+			const formDataObj = Object.fromEntries(formData.entries());
 
-			xhr.addEventListener('load', () => {
-				statusMessage.remove();
-				if (xhr.status === 200) {
+			postData('http://localhost:3000/requests', { 'Content-type': 'application/json' }, JSON.stringify(formDataObj))
+				.then(response => {
+					console.log(response.status);
+					return response.json();
+				})
+				.then(response => {
+					console.log(response);
+					statusMessage.remove();
 					showModalAfterRequest(message.success);
-				} else {
+				})
+				.catch(() => {
 					showModalAfterRequest(message.failure);
-				}
-				setTimeout(() => {
-					form.reset();
-					closeModal();
-				}, 1500);
-			});
-
+				})
+				.finally(() => {
+					setTimeout(() => {
+						form.reset();
+						closeModal();
+					}, 1500);
+				});
 		});
 
 	}
@@ -239,4 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			previousModal.classList.remove('hide');
 		}, 1500);
 	}
+
+	fetch('http://localhost:3000/requests/1')
+		.then(response => response.json())
+		.then(data => console.log(data));
 });
